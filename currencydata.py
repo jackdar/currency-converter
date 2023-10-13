@@ -2,7 +2,6 @@ import sys
 import requests
 import json
 import pandas as pd
-import networkx as nx
 import math
 
 # API Variables
@@ -11,6 +10,37 @@ base_url = 'http://api.exchangeratesapi.io/v1/'
 
 # Get currencies from command-line arguments
 # currency_symbols = sys.argv[1]
+
+
+class Graph:
+    def __init__(self, vertices):
+        self.V = vertices
+        self.edges = []
+
+    def add_edge(self, v, u, w):
+        self.edges.append((v, u, w))
+
+    def bellman_ford(self, src):
+        # Initialize distances
+        d = [float("Inf")] * (self.V + 1)  # starting from 1
+        d[src] = 0
+
+        # Repeat |V| - 1 times
+        for _ in range(self.V-1):
+            d_prime = list(d)  # Copy current distances to d'
+            # self.print_distances(d) # Print the intermediate distances for d.
+            for v, u, w in self.edges:
+                d_prime[u] = min(d_prime[u], d[v] + w)
+
+            d = d_prime  # Replace d by d'
+
+        # Print distances
+        self.print_distances(d)
+
+    def print_distances(self, dist):
+        print("Vertex Distance from Source")
+        for i in range(1, len(dist)):  # Start from 1
+            print("{0}\t\t{1}".format(i, dist[i]))
 
 
 # Currency Data Function
@@ -65,18 +95,15 @@ def print_adjacency_matrix(df):
 # Create weighted graph G
 def create_weighted_graph(df):
     # Create a weighted graph
-    G = nx.DiGraph()
-
-    # Add nodes to the graph
-    for currency in df.index:
-        G.add_node(currency)
+    G = Graph(len(df.index))
 
     # Add weighted edges to the graph from columns to rows
-    for source_currency in df.columns:
-        for target_currency in df.index:
+    for source_currency in range(len(df.columns)):
+        for target_currency in range(len(df.index)):
             if source_currency != target_currency:
-                weight = df.at[source_currency, target_currency]
-                G.add_edge(source_currency, target_currency, weight=weight)
+                weight = df.at[df.columns[source_currency],
+                               df.index[target_currency]]
+                G.add_edge(source_currency, target_currency, -math.log(weight))
 
     return G
 
@@ -86,28 +113,12 @@ def print_weighted_graph(G):
     # Print the graph edges and weights
     for source, target, data in G.edges(data=True):
         weight = data['weight']
-        logarithm = math.log(data['weight'])
-        print(f"{source} -> {target}: {weight}, log({source},{target}) = {logarithm}")
+        print(f"{source} -> {target}: {weight}")
 
 
-# Calculate logarithm
-def calculate_logarithm():
-    logarithm = 0
-
-    for source, target, data in G.edges(data=True):
-        if logarithm == 0:
-            logarithm = math.log(data['weight'])
-        else:
-            logarithm *= math.log(data['weight'])
-
-    print(logarithm)
-
-
+# TEST CASES
 df = create_adjacency_matrix(['NZD', 'AUD', 'EUR'])
 G = create_weighted_graph(df)
-
 print_adjacency_matrix(df)
 print()
-print_weighted_graph(G)
-print()
-calculate_logarithm(G)
+G.bellman_ford(1)
