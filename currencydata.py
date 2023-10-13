@@ -111,7 +111,7 @@ def create_weighted_graph(df):
 # Print weighted graph G
 def print_weighted_graph(G):
     # Print the graph edges and weights
-    for source, target, data in G.edges(data=True):
+    for source, target, data in G.edges:
         weight = data['weight']
         print(f"{source} -> {target}: {weight}")
 
@@ -121,4 +121,5 @@ df = create_adjacency_matrix(['NZD', 'AUD', 'EUR'])
 G = create_weighted_graph(df)
 print_adjacency_matrix(df)
 print()
-G.bellman_ford(1)
+print_weighted_graph(G)
+#G.bellman_ford(1)
